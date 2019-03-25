@@ -1,7 +1,29 @@
 const axios = require('axios')
 const rawInput = require('readline-sync').question
 const courseUrl = `http://saral.navgurukul.org/api/courses`
+const NodeCache = require( "node-cache" )
 
+const secondInHour = 60*60
+const secondInDay = secondInHour*24
+
+const nodeCache = new NodeCache({stdTTL: secondInDay, checkperiod: secondInHour })
+
+// const setCache = (key, value) => {
+//     return new Promise((resolve, reject) => {
+        
+//     })
+// }
+
+const callApi = async (url) => {
+    let data = nodeCache.get(url)
+    if (!data){
+        let response = await axios.get(url)
+        data = response.data
+        nodeCache.set(url, data)
+    }
+    
+    return data
+}
 
 
 // Pure Function
@@ -20,8 +42,8 @@ const selectOneFromArray = (array, message) => {
 }
 
 const getCourseId = async () => {
-    const courseResponse = await axios.get(courseUrl)
-    const availableCourses = courseResponse.data.availableCourses
+    const response = await callApi(courseUrl)
+    const availableCourses = response.availableCourses
 
     for (let i = 0; i < availableCourses.length; i++) {
         console.log(i + 1, availableCourses[i].name)
@@ -35,8 +57,8 @@ const getCourseId = async () => {
 
 const getExercisesList = async (courseId) => {
     const exercisesUrl = `${courseUrl}/${courseId}/exercises`
-    const exercisesResponse = await axios.get(exercisesUrl)
-    const exercises = exercisesResponse.data.data
+    const response = await callApi(exercisesUrl)
+    const exercises = response.data
     return exercises
 }
 
@@ -76,8 +98,8 @@ const nextOrPrev = async(currentSlug, slugs, courseId) => {
     while (true) {
         if (showContent){
             let exerciseUrl = `${courseUrl}/${courseId}/exercise/getBySlug?slug=${currentSlug}`
-            const exerciseResponse = await axios.get(exerciseUrl)
-            console.log(exerciseResponse.data.content)
+            const response = await callApi(exerciseUrl)
+            console.log(response.content)
         }
 
         const userInput = rawInput("Press Next(n/N) / Previous(p/P) / Back or Up (u/U)")
